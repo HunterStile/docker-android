@@ -34,8 +34,10 @@ ENV APP_PATH=${WORK_PATH}/${SCRIPT_PATH}
 RUN mkdir -p ${APP_PATH}
 COPY mixins ${APP_PATH}/mixins
 COPY cli ${APP_PATH}/cli
+RUN python3 -m pip install --no-cache-dir --break-system-packages ${APP_PATH}/cli \
+ && docker-android --help
 RUN --mount=type=secret,id=extension,dst=/tmp/extension.sh \
-    bash /tmp/extension.sh
+    if [ -f /tmp/extension.sh ]; then bash /tmp/extension.sh; fi
 
 #===================================
 # Create Genymotion Template folder
@@ -57,4 +59,4 @@ RUN mkdir -p ${LOG_PATH}
 #=========
 STOPSIGNAL SIGTERM
 RUN gmsaas config set android-sdk-path ${ANDROID_HOME}
-CMD ["${APP_PATH}/mixins/scripts/run.sh"]
+CMD ["/home/androidusr/docker-android/mixins/scripts/run.sh"]

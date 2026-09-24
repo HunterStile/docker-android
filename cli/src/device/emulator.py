@@ -90,11 +90,13 @@ class Emulator(Device):
         })
 
     def is_initialized(self) -> bool:
-        import re
         if os.path.exists(self.path_emulator_config):
             self.logger.info("Config file exists")
             with open(self.path_emulator_config, 'r') as f:
-                if any(re.match(r'hw\.device\.name ?= ?{}'.format(self.device), line) for line in f):
+                profile = self.device.lower().replace(" ", "_")
+                if any(line.partition("=")[0].strip() == "hw.device.name" and
+                       line.partition("=")[2].strip().lower().replace(" ", "_") == profile
+                       for line in f):
                     self.logger.info("Selected device is already created")
                     return True
                 else:
@@ -143,6 +145,8 @@ class Emulator(Device):
             cf.write("disk.dataPartition.size={dp}\n".format(dp=self.data_partition))
             cf.write("skin.path={sp}\n".format(
                 sp="_no_skin" if self.no_skin else device_skin_path))
+            if self.img_type == "google_apis_playstore":
+                cf.write("PlayStore.enabled=yes\n")
         self.logger.info(f"Skin is added in: '{self.path_emulator_config}'")
 
     def create(self) -> None:
@@ -155,7 +159,7 @@ class Emulator(Device):
                            "-k 'system-images;android-{al};{it};{si}' " \
                            "-d {d} -p {pe}".format(n=self.name, it=self.img_type, si=self.sys_img,
                                                    al=self.api_level,
-                                                   d=self.device.lower().replace(" ", "_") if "pixel" in self.device.lower() else self.device.replace(" ", "\ "),
+                                                   d=self.device.lower().replace(" ", "_") if "pixel" in self.device.lower() else self.device.replace(" ", "\\ "),
                                                    pe=self.path_emulator)
             self.logger.info(f"Command to create emulator: '{creation_cmd}'")
             subprocess.check_call(creation_cmd, shell=True)
@@ -166,10 +170,7 @@ class Emulator(Device):
     def change_permission(self) -> None:
         kvm_path = "/dev/kvm"
         if os.path.exists(kvm_path):
-            cmds = (f"sudo chown 1300:1301 {kvm_path}",
-                    "sudo sed -i '1d' /etc/passwd")
-            for c in cmds:
-                subprocess.check_call(c, shell=True)
+            subprocess.check_call(f"sudo chown 1300:1301 {kvm_path}", shell=True)
             self.logger.info("KVM permission is granted!")
         else:
             raise RuntimeError("/dev/kvm cannot be found!")
@@ -178,7 +179,10 @@ class Emulator(Device):
         self.logger.info(f"Deploying the {self.device_type}")
 
         basic_cmd = "emulator @{n}".format(n=self.name)
-        basic_args = "-gpu swiftshader_indirect -accel on -writable-system -verbose"
+        basic_args = "-gpu swiftshader_indirect -accel on"
+        if self.img_type != "google_apis_playstore":
+            basic_args += " -writable-system"
+        basic_args += " -verbose"
         wipe_arg = "-wipe-data" if not self.is_initialized() else ""
 
         start_cmd = f"{basic_cmd} {basic_args} {wipe_arg} {self.additional_args}"
@@ -201,9 +205,10 @@ class Emulator(Device):
                 try:
                     output = subprocess.check_output(
                         bash_command.split()).decode(UTF8)
-                    if expected_keyword in str(output).lower():
+                    if expected_keyword.lower() in output.lower():
                         if readiness_check_type is self.ReadinessCheck.POP_UP_WINDOW:
                             subprocess.check_call(adb_action, shell=True)
+                            success = True
                         else:
                             self.logger.info(
                                 f"{self.device_type} is {readiness_check_type.value}!")
@@ -234,7 +239,9 @@ class Emulator(Device):
         interval_pop_up = 0
         max_attempt_pop_up = 3
         pop_up_system_ui = "Not Responding: com.android.systemui"
-        system_ui_cmd = f"adb shell su root 'kill $(pidof com.android.systemui)'"
+        system_ui_cmd = ("adb shell input keyevent KEYCODE_ENTER"
+                         if self.img_type == "google_apis_playstore" else
+                         "adb shell su root 'kill $(pidof com.android.systemui)'")
         pop_up_key_enter = {
             "Not Responding: com.google.android.gms",
             "Not Responding: system",
@@ -247,8 +254,13 @@ class Emulator(Device):
             self.check_adb_command(self.ReadinessCheck.POP_UP_WINDOW, focus_cmd, pe, max_attempt_pop_up,
                                    interval_pop_up, key_enter_cmd)
 
-        self.check_adb_command(self.ReadinessCheck.WELCOME_SCREEN,
-                               focus_cmd, "launcheractivity", 60, self.interval_waiting)
+        if self.img_type == "google_apis_playstore":
+            self.check_adb_command(self.ReadinessCheck.WELCOME_SCREEN,
+                                   f"adb -s {self.adb_name} shell pm path com.android.vending",
+                                   "package:", 60, self.interval_waiting)
+        else:
+            self.check_adb_command(self.ReadinessCheck.WELCOME_SCREEN,
+                                   focus_cmd, "launcheractivity", 60, self.interval_waiting)
         self.logger.info(f"{self.device_type} is ready to use")
 
     def tear_down(self, *args) -> None:

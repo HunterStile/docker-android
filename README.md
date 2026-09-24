@@ -90,6 +90,8 @@ The default behaviour is to destroy the emulated device on container restart. To
     docker run -v data:/home/androidusr budtmo/docker-android:emulator_11.0
     ```
 
+For two independent emulator containers, each with its own data volume and browser port, see the [multi-device example](./example/multiple-emulators/docker-compose.yml). The published images use Google APIs system images and do not include the Google Play Store. See the [optional Google Play image guide](./documentations/GOOGLE_PLAY_IMAGE.md) for an experimental custom build.
+
 WSL2 Hardware acceleration (Windows 11 only)
 -----------
 

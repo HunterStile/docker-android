@@ -1,0 +1,38 @@
+services:
+  phone-one:
+    image: docker-android:playstore-14.0
+    environment:
+      EMULATOR_DEVICE: "Pixel 8"
+      EMULATOR_NAME: "phone_one"
+      EMULATOR_DATA_PARTITION: "4g"
+      EMULATOR_CONFIG_PATH: /tmp/android-avd-config.ini
+      WEB_VNC: "true"
+      USER_BEHAVIOR_ANALYTICS: "false"
+    devices:
+      - /dev/kvm:/dev/kvm
+    ports:
+      - "127.0.0.1:6080:6080"
+    volumes:
+      - phone-one-data:/home/androidusr
+      - ./avd-config.ini:/tmp/android-avd-config.ini:ro
+
+  phone-two:
+    image: docker-android:playstore-14.0
+    environment:
+      EMULATOR_DEVICE: "Pixel 8"
+      EMULATOR_NAME: "phone_two"
+      EMULATOR_DATA_PARTITION: "4g"
+      EMULATOR_CONFIG_PATH: /tmp/android-avd-config.ini
+      WEB_VNC: "true"
+      USER_BEHAVIOR_ANALYTICS: "false"
+    devices:
+      - /dev/kvm:/dev/kvm
+    ports:
+      - "127.0.0.1:6081:6080"
+    volumes:
+      - phone-two-data:/home/androidusr
+      - ./avd-config.ini:/tmp/android-avd-config.ini:ro
+
+volumes:
+  phone-one-data:
+  phone-two-data:
