@@ -18,6 +18,15 @@ RUN yes | sdkmanager --licenses \
  "system-images;android-${EMULATOR_API_LEVEL};${EMULATOR_IMG_TYPE};${EMULATOR_SYS_IMG}" "emulator" \
  && ln -s ${ANDROID_HOME}/emulator/emulator /usr/bin/
 
+# Emulator 37.1.11 selects gles_swangle for software rendering on Linux, but
+# packages ANGLE in gles_angle. Without the alias it falls back to legacy
+# SwiftShader GLES, which can crash RenderThread when opening Play Store.
+RUN if [ "${EMULATOR_IMG_TYPE}" = "google_apis_playstore" ] \
+       && [ ! -e "${ANDROID_HOME}/emulator/lib64/gles_swangle" ] \
+       && [ -d "${ANDROID_HOME}/emulator/lib64/gles_angle" ]; then \
+      ln -s gles_angle "${ANDROID_HOME}/emulator/lib64/gles_swangle"; \
+    fi
+
 #=============
 # UI Packages
 #-------------
