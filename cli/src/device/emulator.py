@@ -179,7 +179,8 @@ class Emulator(Device):
         self.logger.info(f"Deploying the {self.device_type}")
 
         basic_cmd = "emulator @{n}".format(n=self.name)
-        basic_args = "-gpu swiftshader_indirect -accel on"
+        gpu_mode = "software" if self.img_type == "google_apis_playstore" else "swiftshader_indirect"
+        basic_args = f"-gpu {gpu_mode} -accel on"
         if self.img_type != "google_apis_playstore":
             basic_args += " -writable-system"
         basic_args += " -verbose"

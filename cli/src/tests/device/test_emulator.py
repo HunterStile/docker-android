@@ -119,7 +119,7 @@ class TestEmulator(BaseDeviceTest):
             self.emu.deploy()
 
         popen.assert_called_once_with([
-            "emulator", "@my_emu", "-gpu", "swiftshader_indirect", "-accel", "on",
+            "emulator", "@my_emu", "-gpu", "software", "-accel", "on",
             "-verbose"
         ])
 

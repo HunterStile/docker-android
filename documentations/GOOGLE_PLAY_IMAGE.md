@@ -6,6 +6,8 @@ For two Pixel 8 emulators, use a Linux host or VM with at least 8 vCPUs; 12 GB o
 
 Google's [system image documentation](https://developer.android.com/tools/releases/platforms) explains the difference between Google APIs and Google Play images. Google Play system images are signed with release keys, so Android root access is unavailable; see [Create and manage virtual devices](https://developer.android.com/studio/run/managing-avds). This build does not attempt to install Play Store APKs into another system image.
 
+The Play image uses the emulator's `software` graphics mode. The repository's existing `swiftshader_indirect` mode is retained for its default images; Android's [graphics acceleration guide](https://developer.android.com/studio/run/emulator-acceleration) lists that mode as deprecated in current emulator releases.
+
 ## Build
 
 From the repository root on a Linux Docker host with KVM and Docker Buildx/BuildKit:
